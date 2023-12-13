@@ -27,14 +27,15 @@ data <- separate(data, increment_code, into = c("time_control", "increment"), se
 data$increment_code <- NULL
 data$time_control <- as.numeric(data$time_control)
 data$increment <- as.numeric(data$increment)
-# adding diffrence in rating 
-data$rating_difference <- ifelse(data$winner == "draw", -0.5 * abs(data$white_rating - data$black_rating),
-                               ifelse(data$winner == "white", data$white_rating - data$black_rating, data$black_rating - data$white_rating))
 ###########################################################################
 #data for clustering
 library(caret)
 library(dplyr)
 clustering_data <- data
+# diff in rating 
+clustering_data$rating_difference <- ifelse(data$winner == "draw", -0.5 * abs(data$white_rating - data$black_rating),
+                                 ifelse(data$winner == "white", data$white_rating - data$black_rating, data$black_rating - data$white_rating))
+
 # rated (TRUE, FALSE) -> 1, 0
 clustering_data$rated <- ifelse(data$rated == "TRUE", 1, 0)
 # count encode opening names
@@ -50,6 +51,28 @@ str(encoded_df)
 final_clustering_data = cbind(clustering_data, encoded_df)
 final_clustering_data$victory_status <- NULL
 final_clustering_data$winner <- NULL
+# get mean rating
+final_clustering_data$mean_rating <- (final_clustering_data$white_rating + final_clustering_data$black_rating)/2
+final_clustering_data$white_rating <-NULL
+final_clustering_data$black_rating <-NULL
+# Perform k-means clustering (let's use k = 3 for this example)
+library(ggpubr)
+library(factoextra)
+set.seed(123)
+k <- 3
+pca_result <- prcomp(final_clustering_data, scale. = TRUE)
+
+# Extract the transformed data (scores) from PCA
+pca_data <- as.data.frame(pca_result$x)
+kmeans_result <- kmeans(pca_data, centers = k, nstart = 25)
+
+# Plot the cluster plot using clusplot
+fviz_cluster(kmeans_result, data = final_clustering_data,
+             palette = c("#2E9FDF", "#000000","#FF7F50", "#8A2BE2", "#32CD32", "#800400"), 
+             geom = "point",
+             ellipse.type = "convex", 
+             ggtheme = theme_bw()
+)
 ############################################################################
 #predicting the winner before the game with supervised learning
 #decision trees
@@ -57,8 +80,10 @@ install.packages("rpart")
 install.packages("rpart.plot")
 library(rpart)
 library(rpart.plot)
+supervised_data <- data
+
 head(data)
-tree <- rpart(winner ~rating_difference + white_rating + black_rating + victory_status, data = data)
+tree <- rpart(winner ~., data = data)
 rf_data <- clustering_data
 rf_data$victory_status <- NULL
 rf <- randomForest(rated ~ turns + time_control, data = rf_data)
