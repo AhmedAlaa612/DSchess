@@ -27,6 +27,9 @@ data <- separate(data, increment_code, into = c("time_control", "increment"), se
 data$increment_code <- NULL
 data$time_control <- as.numeric(data$time_control)
 data$increment <- as.numeric(data$increment)
+# adding diffrence in rating 
+data$rating_difference <- ifelse(data$winner == "draw", -0.5 * abs(data$white_rating - data$black_rating),
+                               ifelse(data$winner == "white", data$white_rating - data$black_rating, data$black_rating - data$white_rating))
 ###########################################################################
 #data for clustering
 library(caret)
@@ -47,4 +50,18 @@ str(encoded_df)
 final_clustering_data = cbind(clustering_data, encoded_df)
 final_clustering_data$victory_status <- NULL
 final_clustering_data$winner <- NULL
-
+############################################################################
+#predicting the winner before the game with supervised learning
+#decision trees
+install.packages("rpart")
+install.packages("rpart.plot")
+library(rpart)
+library(rpart.plot)
+head(data)
+tree <- rpart(winner ~rating_difference + white_rating + black_rating + victory_status, data = data)
+rf_data <- clustering_data
+rf_data$victory_status <- NULL
+rf <- randomForest(rated ~ turns + time_control, data = rf_data)
+rpart.plot(tree)
+############################################################################
+# get common patterns in openings with Apriori Algorithm
