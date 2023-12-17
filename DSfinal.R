@@ -75,20 +75,64 @@ fviz_cluster(kmeans_result, data = final_clustering_data,
              ggtheme = theme_bw()
 )
 summary(kmeans_result)
-fviz_summary(kmeans_result, data = final_clustering_data)
 ############################################################################
-#predicting the winner before the game with supervised learning
-#decision trees
-install.packages("rpart")
-install.packages("rpart.plot")
+###################################################
+#           understand the data                   #
+###################################################
+# rated -> true or false -> 1, 0
+# turns -> 1 : 349 -> log to be taken
+# victory status -> one hot encoding
+# winner (target)-> factor as numeric
+# time control -> 1 : 180 -> log to be taken
+# increment -> 0 : 180 -> log to be taken
+# white rating, black rating -> 780 : 2700 -> log to be taken
+# main opening -> label encoding -> log
+# opening ply -> 1:28 -> log to be taken
+str(data)
+min(data$opening_ply)
+hist(data$turns, xlab= "values", ylab="freq")
+###################################################
+#              pre-processing                     #
+###################################################
+# encode categorical features
+supervised_data <- data
+supervised_data <- supervised_data %>%
+  group_by(main_opening) %>%
+  mutate(opening_freq = n()) %>%
+  ungroup()
+supervised_data$winner <- ifelse(supervised_data$winner == "white", 0,
+                                 ifelse(supervised_data$winner == "black", 1, 0.5))
+supervised_data <- supervised_data %>%
+  mutate(rated = as.numeric(tolower(rated) == "true"))
+encoded_columns <- model.matrix(~victory_status - 1, data = supervised_data)
+supervised_data <- cbind(supervised_data, encoded_columns)
+supervised_data$victory_status <- NULL
+supervised_data$main_opening <- NULL
+# normalize numerical features
+skewed <- c("turns", "time_control", "increment", "white_rating", "black_rating", "opening_ply", "opening_freq")
+supervised_data_transformed <- supervised_data
+supervised_data_transformed[, skewed] <- lapply(supervised_data_transformed[, skewed], function(x) log(x + 1))
+library(caret)
+final_supervised_data <- supervised_data_transformed
+preprocess_range <- preProcess(supervised_data_transformed[, skewed], method = "range")
+final_supervised_data[, skewed] <- predict(preprocess_range, newdata = supervised_data_transformed[, skewed])
+###################################################
+#           splitting the data                    #
+###################################################
+set.seed(123)
+final_supervised_data$winner <- factor(final_supervised_data$winner)
+index <- createDataPartition(final_supervised_data$winner, p = 0.7, list = FALSE)
+train_data <- final_supervised_data[index, ]
+test_data <- final_supervised_data[-index, ]
+###################################################
+#                modeling                         #
+###################################################
+# decision trees
 library(rpart)
 library(rpart.plot)
-supervised_data <- data
-head(data)
-head(supervised_data$main_opening)
-supervised_data$main_opening <- as.numeric(as.factor(data$main_opening))
-supervised_data$victory_status <- as.numeric(as.factor(supervised_data$victory_status))
-tree <- rpart(winner ~ main_opening + victory_status, data = supervised_data)
-rpart.plot(tree)
+model <- rpart(winner~., data = train_data) 
+prediction <- predict(model, newdata = test_data, type = "class")
+confusionMatrix(prediction, test_data$winner)
+# naive bayes
 ############################################################################
 # get common patterns in openings with Apriori Algorithm
