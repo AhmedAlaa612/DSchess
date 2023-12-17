@@ -4,7 +4,6 @@ head(data)
 duplicated(data)
 is.na(data)
 str(data)
-
 game_moves <- data$moves
 players <- c(data$white_id, data$black_id)
 date_of_games <- data$created_at
@@ -45,16 +44,18 @@ clustering_data <- clustering_data %>%
 clustering_data$opening <- as.numeric(clustering_data$opening)
 clustering_data$main_opening <- NULL
 #create dummy variables for victory status and winner
-encoded_data <- dummyVars(formula = ~victory_status+winner-1, data =  clustering_data, sep = '_')
-encoded_df <- data.frame(predict(encoded_data, newdata = data))
-str(encoded_df)
-final_clustering_data = cbind(clustering_data, encoded_df)
+#encoded_data <- dummyVars(formula = ~victory_status+winner-1, data =  clustering_data, sep = '_')
+#encoded_df <- data.frame(predict(encoded_data, newdata = data))
+#str(encoded_df)
+#final_clustering_data = cbind(clustering_data, encoded_df)
+final_clustering_data <- clustering_data
 final_clustering_data$victory_status <- NULL
 final_clustering_data$winner <- NULL
 # get mean rating
 final_clustering_data$mean_rating <- (final_clustering_data$white_rating + final_clustering_data$black_rating)/2
 final_clustering_data$white_rating <-NULL
 final_clustering_data$black_rating <-NULL
+pairs.panels(data)
 # Perform k-means clustering (let's use k = 3 for this example)
 library(ggpubr)
 library(factoextra)
@@ -66,13 +67,15 @@ pca_result <- prcomp(final_clustering_data, scale. = TRUE)
 pca_data <- as.data.frame(pca_result$x)
 kmeans_result <- kmeans(pca_data, centers = k, nstart = 25)
 
-# Plot the cluster plot using clusplot
+# Plot the cluster plot using fviz cluster
 fviz_cluster(kmeans_result, data = final_clustering_data,
              palette = c("#2E9FDF", "#000000","#FF7F50", "#8A2BE2", "#32CD32", "#800400"), 
              geom = "point",
              ellipse.type = "convex", 
              ggtheme = theme_bw()
 )
+summary(kmeans_result)
+fviz_summary(kmeans_result, data = final_clustering_data)
 ############################################################################
 #predicting the winner before the game with supervised learning
 #decision trees
@@ -81,12 +84,11 @@ install.packages("rpart.plot")
 library(rpart)
 library(rpart.plot)
 supervised_data <- data
-
 head(data)
-tree <- rpart(winner ~., data = data)
-rf_data <- clustering_data
-rf_data$victory_status <- NULL
-rf <- randomForest(rated ~ turns + time_control, data = rf_data)
+head(supervised_data$main_opening)
+supervised_data$main_opening <- as.numeric(as.factor(data$main_opening))
+supervised_data$victory_status <- as.numeric(as.factor(supervised_data$victory_status))
+tree <- rpart(winner ~ main_opening + victory_status, data = supervised_data)
 rpart.plot(tree)
 ############################################################################
 # get common patterns in openings with Apriori Algorithm
