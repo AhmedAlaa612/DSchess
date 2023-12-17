@@ -133,6 +133,16 @@ library(rpart.plot)
 model <- rpart(winner~., data = train_data) 
 prediction <- predict(model, newdata = test_data, type = "class")
 confusionMatrix(prediction, test_data$winner)
-# naive bayes
+# Naive Bayes
+library(e1071)
+model_nb <- naiveBayes(winner ~ ., data = train_data)
+prediction_nb <- predict(model_nb, newdata = test_data)
+confusionMatrix(prediction_nb, test_data$winner)
 ############################################################################
 # get common patterns in openings with Apriori Algorithm
+opening_moves <- mapply(function(moves, ply) moves[1:ply], strsplit(game_moves, " "), data$opening_ply)
+library(arules)
+opening_transactions <- as(opening_moves, "transactions")
+summary(opening_transactions)
+rules <- apriori(opening_transactions, parameter = list(support = 0.1, confidence = 0.8))
+inspect(rules)
