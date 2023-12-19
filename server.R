@@ -1,9 +1,6 @@
 source("getGraphs.r")
 
-# Define server
 server <- function(input, output,session) {
-  # Use observeEvent to update choices for "mode" based on the selected "Type"
-  # Use observeEvent to update choices for "mode" based on the selected "Type"
   observe({
     if (input$type == "Visualization") {
       updateSelectInput(session, "mode", choices = c( "Openings","win-loss-draw", "Time taken"), selected = "Openings")
@@ -23,7 +20,6 @@ server <- function(input, output,session) {
     }
   })
 
-  # Use reactive expression to handle reactivity
  mode <- reactive({
     input$mode
   })
@@ -33,7 +29,6 @@ server <- function(input, output,session) {
   player_mode <- reactive({
     input$player_mode
   })
-  # Reactive expression to get the plot based on selected mode
   plot_output <- reactive({
     if(type() == "Visualization"){
       if(mode()=="win-loss-draw"){
@@ -56,8 +51,7 @@ server <- function(input, output,session) {
       }
   })
   
-  # Render the plot
-  output$cluster_plot <- renderPlot({
+  output$plot <- renderPlot({
     plot_output()
   })
   
