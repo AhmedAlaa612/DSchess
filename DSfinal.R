@@ -63,7 +63,7 @@ pca_result <- prcomp(final_clustering_data, scale. = TRUE)
 
 # Extract the transformed data (scores) from PCA
 pca_data <- as.data.frame(pca_result$x)
-kmeans_result <- kmeans(pca_data, centers = k, nstart = 25)
+kmeans_result <- kmeans(pca_data, centers = 3, nstart = 25)
 #summary(kmeans_result)
 ############################################################################
 ###################################################
@@ -136,8 +136,8 @@ conf_matrix_nb <-confusionMatrix(prediction_nb, test_data$winner)
 #print(conf_matrix_nb)
 
 # Compare accuracy
-#acc_tree <- conf_matrix_tree$overall["Accuracy"]
-#acc_nb <- conf_matrix_nb$overall["Accuracy"]
+acc_tree <- conf_matrix_tree$overall["Accuracy"]
+acc_nb <- conf_matrix_nb$overall["Accuracy"]
 
 #print(paste("Accuracy - Decision Tree: ", acc_tree))
 #print(paste("Accuracy - Naive Bayes: ", acc_nb))
