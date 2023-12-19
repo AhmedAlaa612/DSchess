@@ -1,9 +1,9 @@
 library(tidyr)
 data <- read.csv("games.csv", header = TRUE)
-head(data)
-duplicated(data)
-is.na(data)
-str(data)
+#head(data)
+#duplicated(data)
+#is.na(data)
+#str(data)
 game_moves <- data$moves
 players <- c(data$white_id, data$black_id)
 date_of_games <- data$created_at
@@ -15,11 +15,11 @@ data$white_id <- NULL
 data$last_move_at <- NULL
 data$created_at <- NULL
 data$opening_eco <- NULL
-str(data)
+#str(data)
 # slicing main opening names
 data <- separate(data, opening_name, into = c("main_opening", "variation"), sep = ":", extra = "merge", fill = "right")
 data$variation <- NULL
-str(data)
+#str(data)
 data$variation <- NULL
 # slicing time
 data <- separate(data, increment_code, into = c("time_control", "increment"), sep = "\\+")
@@ -41,7 +41,7 @@ clustering_data$rated <- ifelse(data$rated == "TRUE", 1, 0)
 # count encode opening names
 counts <- table(clustering_data$main_opening)
 clustering_data <- clustering_data %>%
-  mutate(opening = counts[main_opening])
+mutate(opening = counts[main_opening])
 clustering_data$opening <- as.numeric(clustering_data$opening)
 clustering_data$main_opening <- NULL
 #create dummy variables for victory status and winner
@@ -49,6 +49,7 @@ encoded_data <- dummyVars(formula = ~victory_status+winner-1, data =  clustering
 encoded_df <- data.frame(predict(encoded_data, newdata = data))
 #str(encoded_df)
 final_clustering_data = cbind(clustering_data, encoded_df)
+#final_clustering_data <- clustering_data
 final_clustering_data$victory_status <- NULL
 final_clustering_data$winner <- NULL
 # get mean rating
@@ -59,21 +60,12 @@ final_clustering_data$black_rating <-NULL
 library(ggpubr)
 library(factoextra)
 set.seed(123)
-k <- 3
 pca_result <- prcomp(final_clustering_data, scale. = TRUE)
 
 # Extract the transformed data (scores) from PCA
 pca_data <- as.data.frame(pca_result$x)
-kmeans_result <- kmeans(pca_data, centers = k, nstart = 25)
-
-# Plot the cluster plot using fviz cluster
-fviz_cluster(kmeans_result, data = final_clustering_data,
-             palette = c("#2E9FDF", "#000000","#FF7F50", "#8A2BE2", "#32CD32", "#800400"), 
-             geom = "point",
-             ellipse.type = "convex", 
-             ggtheme = theme_bw()
-)
-summary(kmeans_result)
+kmeans_result <- kmeans(pca_data, centers = 3, nstart = 25)
+#summary(kmeans_result)
 ############################################################################
 ###################################################
 #           understand the data                   #
@@ -87,9 +79,9 @@ summary(kmeans_result)
 # white rating, black rating -> 780 : 2700 -> log to be taken
 # main opening -> label encoding -> log
 # opening ply -> 1:28 -> log to be taken
-str(data)
-min(data$opening_ply)
-hist(data$turns, xlab= "values", ylab="freq")
+#str(data)
+#min(data$opening_ply)
+#hist(data$turns, xlab= "values", ylab="freq")
 ###################################################
 #              pre-processing                     #
 ###################################################
@@ -138,31 +130,31 @@ model_nb <- naiveBayes(winner ~ ., data = train_data)
 prediction_nb <- predict(model_nb, newdata = test_data)
 conf_matrix_nb <-confusionMatrix(prediction_nb, test_data$winner)
 # Print confusion matrices
-print("Confusion Matrix - Decision Tree:")
-print(conf_matrix_tree)
+#print("Confusion Matrix - Decision Tree:")
+#print(conf_matrix_tree)
 
-print("Confusion Matrix - Naive Bayes:")
-print(conf_matrix_nb)
+#print("Confusion Matrix - Naive Bayes:")
+#print(conf_matrix_nb)
 
 # Compare accuracy
 acc_tree <- conf_matrix_tree$overall["Accuracy"]
 acc_nb <- conf_matrix_nb$overall["Accuracy"]
 
-print(paste("Accuracy - Decision Tree: ", acc_tree))
-print(paste("Accuracy - Naive Bayes: ", acc_nb))
+#print(paste("Accuracy - Decision Tree: ", acc_tree))
+#print(paste("Accuracy - Naive Bayes: ", acc_nb))
 
 # Plotting
-par(mfrow=c(1,2))
+#par(mfrow=c(1,2))
 
 # Plot for Decision Tree
-plot(test_data$winner, prediction,
-     xlab = "Actual Winner", ylab = "Predicted Winner",
-     main = paste("Decision Tree\nAccuracy: ", round(acc_tree, 2)))
+#plot(test_data$winner, prediction,
+     #xlab = "Actual Winner", ylab = "Predicted Winner",
+     #main = paste("Decision Tree\nAccuracy: ", round(acc_tree, 2)))
 
 # Plot for Naive Bayes
-plot(test_data$winner, prediction_nb,
-     xlab = "Actual Winner", ylab = "Predicted Winner",
-     main = paste("Naive Bayes\nAccuracy: ", round(acc_nb, 2)))
+#plot(test_data$winner, prediction_nb,
+#     xlab = "Actual Winner", ylab = "Predicted Winner",
+#     main = paste("Naive Bayes\nAccuracy: ", round(acc_nb, 2)))
 
 ############################################################################
 # get common patterns in openings with Apriori Algorithm
