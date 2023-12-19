@@ -26,6 +26,7 @@ data <- separate(data, increment_code, into = c("time_control", "increment"), se
 data$increment_code <- NULL
 data$time_control <- as.numeric(data$time_control)
 data$increment <- as.numeric(data$increment)
+duplicated(data)
 ###########################################################################
 #data for clustering
 library(caret)
@@ -44,11 +45,10 @@ clustering_data <- clustering_data %>%
 clustering_data$opening <- as.numeric(clustering_data$opening)
 clustering_data$main_opening <- NULL
 #create dummy variables for victory status and winner
-#encoded_data <- dummyVars(formula = ~victory_status+winner-1, data =  clustering_data, sep = '_')
-#encoded_df <- data.frame(predict(encoded_data, newdata = data))
+encoded_data <- dummyVars(formula = ~victory_status+winner-1, data =  clustering_data, sep = '_')
+encoded_df <- data.frame(predict(encoded_data, newdata = data))
 #str(encoded_df)
-#final_clustering_data = cbind(clustering_data, encoded_df)
-final_clustering_data <- clustering_data
+final_clustering_data = cbind(clustering_data, encoded_df)
 final_clustering_data$victory_status <- NULL
 final_clustering_data$winner <- NULL
 # get mean rating
