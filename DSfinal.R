@@ -26,6 +26,7 @@ data <- separate(data, increment_code, into = c("time_control", "increment"), se
 data$increment_code <- NULL
 data$time_control <- as.numeric(data$time_control)
 data$increment <- as.numeric(data$increment)
+duplicated(data)
 ###########################################################################
 #data for clustering
 library(caret)
