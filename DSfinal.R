@@ -66,6 +66,19 @@ pca_result <- prcomp(final_clustering_data, scale. = TRUE)
 pca_data <- as.data.frame(pca_result$x)
 kmeans_result <- kmeans(pca_data, centers = 3, nstart = 25)
 #summary(kmeans_result)
+# Add cluster assignments to the main data
+final_clustering_data$cluster <- kmeans_result$cluster
+
+# Load the dplyr package
+library(dplyr)
+
+# Group by cluster and calculate min/max for each feature
+cluster_summary <- final_clustering_data %>%
+  group_by(cluster) %>%
+  summarise(across(everything(), list(min = min, max = max, mean = mean), .names = "{col}_{fn}"))
+
+# Print the cluster summary
+View(cluster_summary)
 ############################################################################
 ###################################################
 #           understand the data                   #
@@ -164,3 +177,5 @@ opening_transactions <- as(opening_moves, "transactions")
 summary(opening_transactions)
 rules <- apriori(opening_transactions, parameter = list(support = 0.1, confidence = 0.8))
 inspect(rules)
+
+plot(rules, method="grouped matrix", k = 5)
