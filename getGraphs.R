@@ -255,3 +255,7 @@ getSupervised <- function() {
   
   par(mfrow = c(1, 1)) 
 }
+getArules<- function(){
+  library(arulesViz)
+  plot(rules, method="grouped matrix", k = 5)
+}
