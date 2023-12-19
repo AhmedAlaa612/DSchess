@@ -1,4 +1,3 @@
-# Define UI
 ui <- fluidPage(
   titlePanel("Chess dataset"),
   sidebarLayout(
@@ -8,7 +7,7 @@ ui <- fluidPage(
       uiOutput("player_mode_ui"),
     ),
     mainPanel(
-      plotOutput("cluster_plot")
+      plotOutput("plot")
     )
   )
 )
