@@ -167,7 +167,6 @@ most_openings <- function(){
     arrange(desc(count)) %>%
     slice_head(n = 20)
   
-  # Plot the top 20 most played openings
   ggplot(opening_counts, aes(x = reorder(main_opening, -count), y = count)) +
     geom_bar(stat = 'identity', fill = 'skyblue') +
     coord_flip() +
@@ -175,7 +174,6 @@ most_openings <- function(){
     theme_minimal()
 }
 calculate_time <- function() {
-  # Mutate to create white and black Elo levels
   mutated_data <- data %>%
     mutate(white_elo_level = case_when(
       white_rating < 1000 ~ "< 1000",
@@ -216,30 +214,25 @@ calculate_time <- function() {
       TRUE ~ NA_character_
     ))
   
-  # Reshape the data to combine white and black ratings into a single column
   combined_ratings_data <- mutated_data %>%
     select(white_elo_level, black_elo_level, time_control) %>%
     gather(key = "player", value = "elo_level", white_elo_level, black_elo_level)
-  # Order Elo levels properly
   ordered_levels <- c(
     "< 1000", "1000-1100", "1100-1200", "1200-1300", "1300-1400", "1400-1500",
     "1500-1600", "1600-1700", "1700-1800", "1800-1900", "1900-2000", "2000-2100",
     "2100-2200", "2200-2300", "2300-2400", "> 2400"
   )
   
-  # Reorder the levels in the dataframe
   combined_ratings_data$elo_level <- factor(
     combined_ratings_data$elo_level,
     levels = ordered_levels,
     ordered = TRUE
   )
   
-  # Grouping data by Elo level and calculating the average time_taken
   average_time_by_elo <- combined_ratings_data %>%
     group_by(elo_level) %>%
     summarise(average_time = mean(time_control, na.rm = TRUE))
   
-  # Plotting the average time taken based on Elo level
   ggplot(average_time_by_elo, aes(x = elo_level, y = average_time)) +
     geom_bar(stat = "identity", fill = "skyblue", color = "black") +
     labs(title = "Average Time Taken Based on Rating",
@@ -250,17 +243,15 @@ calculate_time <- function() {
     
 }
 getSupervised <- function() {
-  par(mfrow = c(1, 2))  # Set up a 1x2 grid for plots
+  par(mfrow = c(1, 2))
   
-  # Plot for Decision Tree
   plot(test_data$winner, prediction,
        xlab = "Actual Winner", ylab = "Predicted Winner",
        main = paste("Decision Tree\nAccuracy: ", round(acc_tree, 2)))
   
-  # Plot for Naive Bayes
   plot(test_data$winner, prediction_nb,
        xlab = "Actual Winner", ylab = "Predicted Winner",
        main = paste("Naive Bayes\nAccuracy: ", round(acc_nb, 2)))
   
-  par(mfrow = c(1, 1))  # Reset the plotting layout to the default
+  par(mfrow = c(1, 1)) 
 }
