@@ -55,7 +55,6 @@ final_clustering_data$winner <- NULL
 final_clustering_data$mean_rating <- (final_clustering_data$white_rating + final_clustering_data$black_rating)/2
 final_clustering_data$white_rating <-NULL
 final_clustering_data$black_rating <-NULL
-pairs.panels(data)
 # Perform k-means clustering (let's use k = 3 for this example)
 library(ggpubr)
 library(factoextra)
@@ -132,12 +131,39 @@ library(rpart)
 library(rpart.plot)
 model <- rpart(winner~., data = train_data) 
 prediction <- predict(model, newdata = test_data, type = "class")
-confusionMatrix(prediction, test_data$winner)
-# Naive Bayes
+conf_matrix_tree <-confusionMatrix(prediction, test_data$winner)
+
 library(e1071)
 model_nb <- naiveBayes(winner ~ ., data = train_data)
 prediction_nb <- predict(model_nb, newdata = test_data)
-confusionMatrix(prediction_nb, test_data$winner)
+conf_matrix_nb <-confusionMatrix(prediction_nb, test_data$winner)
+# Print confusion matrices
+print("Confusion Matrix - Decision Tree:")
+print(conf_matrix_tree)
+
+print("Confusion Matrix - Naive Bayes:")
+print(conf_matrix_nb)
+
+# Compare accuracy
+acc_tree <- conf_matrix_tree$overall["Accuracy"]
+acc_nb <- conf_matrix_nb$overall["Accuracy"]
+
+print(paste("Accuracy - Decision Tree: ", acc_tree))
+print(paste("Accuracy - Naive Bayes: ", acc_nb))
+
+# Plotting
+par(mfrow=c(1,2))
+
+# Plot for Decision Tree
+plot(test_data$winner, prediction,
+     xlab = "Actual Winner", ylab = "Predicted Winner",
+     main = paste("Decision Tree\nAccuracy: ", round(acc_tree, 2)))
+
+# Plot for Naive Bayes
+plot(test_data$winner, prediction_nb,
+     xlab = "Actual Winner", ylab = "Predicted Winner",
+     main = paste("Naive Bayes\nAccuracy: ", round(acc_nb, 2)))
+
 ############################################################################
 # get common patterns in openings with Apriori Algorithm
 opening_moves <- mapply(function(moves, ply) moves[1:ply], strsplit(game_moves, " "), data$opening_ply)
