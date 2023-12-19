@@ -34,14 +34,14 @@ library(dplyr)
 clustering_data <- data
 # diff in rating 
 clustering_data$rating_difference <- ifelse(data$winner == "draw", -0.5 * abs(data$white_rating - data$black_rating),
-                                 ifelse(data$winner == "white", data$white_rating - data$black_rating, data$black_rating - data$white_rating))
+                                            ifelse(data$winner == "white", data$white_rating - data$black_rating, data$black_rating - data$white_rating))
 
 # rated (TRUE, FALSE) -> 1, 0
 clustering_data$rated <- ifelse(data$rated == "TRUE", 1, 0)
 # count encode opening names
 counts <- table(clustering_data$main_opening)
 clustering_data <- clustering_data %>%
-mutate(opening = counts[main_opening])
+  mutate(opening = counts[main_opening])
 clustering_data$opening <- as.numeric(clustering_data$opening)
 clustering_data$main_opening <- NULL
 #create dummy variables for victory status and winner
@@ -66,6 +66,19 @@ pca_result <- prcomp(final_clustering_data, scale. = TRUE)
 pca_data <- as.data.frame(pca_result$x)
 kmeans_result <- kmeans(pca_data, centers = 3, nstart = 25)
 #summary(kmeans_result)
+# Add cluster assignments to the main data
+final_clustering_data$cluster <- kmeans_result$cluster
+
+# Load the dplyr package
+library(dplyr)
+
+# Group by cluster and calculate min/max for each feature
+cluster_summary <- final_clustering_data %>%
+  group_by(cluster) %>%
+  summarise(across(everything(), list(min = min, max = max, mean = mean), .names = "{col}_{fn}"))
+
+# Print the cluster summary
+View(cluster_summary)
 ############################################################################
 ###################################################
 #           understand the data                   #
@@ -148,8 +161,8 @@ acc_nb <- conf_matrix_nb$overall["Accuracy"]
 
 # Plot for Decision Tree
 #plot(test_data$winner, prediction,
-     #xlab = "Actual Winner", ylab = "Predicted Winner",
-     #main = paste("Decision Tree\nAccuracy: ", round(acc_tree, 2)))
+#xlab = "Actual Winner", ylab = "Predicted Winner",
+#main = paste("Decision Tree\nAccuracy: ", round(acc_tree, 2)))
 
 # Plot for Naive Bayes
 #plot(test_data$winner, prediction_nb,
@@ -160,7 +173,10 @@ acc_nb <- conf_matrix_nb$overall["Accuracy"]
 # get common patterns in openings with Apriori Algorithm
 opening_moves <- mapply(function(moves, ply) moves[1:ply], strsplit(game_moves, " "), data$opening_ply)
 library(arules)
+library(arulesViz)
 opening_transactions <- as(opening_moves, "transactions")
 summary(opening_transactions)
 rules <- apriori(opening_transactions, parameter = list(support = 0.1, confidence = 0.8))
 inspect(rules)
+
+plot(rules, method="grouped matrix", k = 5)
