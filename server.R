@@ -5,7 +5,7 @@ server <- function(input, output,session) {
     if (input$type == "Visualization") {
       updateSelectInput(session, "mode", choices = c( "Openings","win-loss-draw", "Time taken"), selected = "Openings")
     } else {
-      updateSelectInput(session, "mode", choices = c("Supervised", "Unsupervised"), selected = "Unsupervised")
+      updateSelectInput(session, "mode", choices = c("Supervised", "Unsupervised","arules"), selected = "Unsupervised")
       output$player_mode_ui <- renderUI({})
     }
   })
@@ -47,6 +47,8 @@ server <- function(input, output,session) {
       getUnsupervised()
     } else if (mode() == "Supervised"){
       getSupervised()
+    }else if(mode()=="arules"){
+      getArules()
     }
       }
   })
