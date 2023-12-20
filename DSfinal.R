@@ -1,4 +1,13 @@
 library(tidyr)
+library(arules)
+library(arulesViz)
+library(caret)
+library(dplyr)
+library(ggpubr)
+library(factoextra)
+library(rpart)
+library(rpart.plot)
+library(e1071)
 data <- read.csv("games.csv", header = TRUE)
 #head(data)
 #duplicated(data)
@@ -27,10 +36,9 @@ data$increment_code <- NULL
 data$time_control <- as.numeric(data$time_control)
 data$increment <- as.numeric(data$increment)
 duplicated(data)
-###########################################################################
-#data for clustering
-library(caret)
-library(dplyr)
+##############################################
+#           data for clustering              #
+##############################################
 clustering_data <- data
 # diff in rating 
 clustering_data$rating_difference <- ifelse(data$winner == "draw", -0.5 * abs(data$white_rating - data$black_rating),
@@ -49,36 +57,53 @@ encoded_data <- dummyVars(formula = ~victory_status+winner-1, data =  clustering
 encoded_df <- data.frame(predict(encoded_data, newdata = data))
 #str(encoded_df)
 final_clustering_data = cbind(clustering_data, encoded_df)
-#final_clustering_data <- clustering_data
 final_clustering_data$victory_status <- NULL
 final_clustering_data$winner <- NULL
 # get mean rating
 final_clustering_data$mean_rating <- (final_clustering_data$white_rating + final_clustering_data$black_rating)/2
 final_clustering_data$white_rating <-NULL
 final_clustering_data$black_rating <-NULL
-# Perform k-means clustering (let's use k = 3 for this example)
-library(ggpubr)
-library(factoextra)
+#clustering data without winner
+final_clustering_data_no_winner <- final_clustering_data
+final_clustering_data_no_winner$winnerblack <- NULL
+final_clustering_data_no_winner$winnerwhite <- NULL
+final_clustering_data_no_winner$winnerdraw <-NULL
+###########################################
+#         Perform k-means clustering      #
+###########################################
 set.seed(123)
+# preform PCA
 pca_result <- prcomp(final_clustering_data, scale. = TRUE)
-
-# Extract the transformed data (scores) from PCA
 pca_data <- as.data.frame(pca_result$x)
 kmeans_result <- kmeans(pca_data, centers = 3, nstart = 25)
 #summary(kmeans_result)
-# Add cluster assignments to the main data
 final_clustering_data$cluster <- kmeans_result$cluster
 
-# Load the dplyr package
-library(dplyr)
-
-# Group by cluster and calculate min/max for each feature
 cluster_summary <- final_clustering_data %>%
   group_by(cluster) %>%
   summarise(across(everything(), list(min = min, max = max, mean = mean), .names = "{col}_{fn}"))
-
-# Print the cluster summary
-View(cluster_summary)
+#View(cluster_summary)
+##########################################
+#    preform K-means with no winner      #
+##########################################
+set.seed(123)
+#PCA
+pca_result_no_winner <- prcomp(final_clustering_data_no_winner, scale. = TRUE)
+pca_data_no_winner <- as.data.frame(pca_result_no_winner$x)
+kmeans_result_no_winner <- kmeans(pca_data_no_winner, centers = 3, nstart = 25)
+#summary(kmeans_result)
+final_clustering_data_no_winner$cluster <- kmeans_result_no_winner$cluster
+cluster_summary_no_winner <- final_clustering_data_no_winner %>%
+  group_by(cluster) %>%
+  summarise(across(everything(), list(min = min, max = max, mean = mean), .names = "{col}_{fn}"))
+#View(cluster_summary_no_winner)
+#fviz_cluster(
+ # kmeans_result_no_winner, data = final_clustering_data_no_winner,
+  #geom = "point",
+  #ellipse.type = "convex",
+  #palette = c("#2E9FDF", "#FF7F50", "#32CD32"),
+  #ggtheme = theme_bw()
+#) 
 ############################################################################
 ###################################################
 #           understand the data                   #
@@ -116,7 +141,6 @@ supervised_data$main_opening <- NULL
 skewed <- c("turns", "time_control", "increment", "white_rating", "black_rating", "opening_ply", "opening_freq")
 supervised_data_transformed <- supervised_data
 supervised_data_transformed[, skewed] <- lapply(supervised_data_transformed[, skewed], function(x) log(x + 1))
-library(caret)
 final_supervised_data <- supervised_data_transformed
 preprocess_range <- preProcess(supervised_data_transformed[, skewed], method = "range")
 final_supervised_data[, skewed] <- predict(preprocess_range, newdata = supervised_data_transformed[, skewed])
@@ -132,29 +156,17 @@ test_data <- final_supervised_data[-index, ]
 #                modeling                         #
 ###################################################
 # decision trees
-library(rpart)
-library(rpart.plot)
 model <- rpart(winner~., data = train_data) 
 prediction <- predict(model, newdata = test_data, type = "class")
 conf_matrix_tree <-confusionMatrix(prediction, test_data$winner)
 
-library(e1071)
 model_nb <- naiveBayes(winner ~ ., data = train_data)
 prediction_nb <- predict(model_nb, newdata = test_data)
 conf_matrix_nb <-confusionMatrix(prediction_nb, test_data$winner)
-# Print confusion matrices
-#print("Confusion Matrix - Decision Tree:")
-#print(conf_matrix_tree)
 
-#print("Confusion Matrix - Naive Bayes:")
-#print(conf_matrix_nb)
-
-# Compare accuracy
+# accuracy
 acc_tree <- conf_matrix_tree$overall["Accuracy"]
 acc_nb <- conf_matrix_nb$overall["Accuracy"]
-
-#print(paste("Accuracy - Decision Tree: ", acc_tree))
-#print(paste("Accuracy - Naive Bayes: ", acc_nb))
 
 # Plotting
 #par(mfrow=c(1,2))
@@ -172,10 +184,10 @@ acc_nb <- conf_matrix_nb$overall["Accuracy"]
 ############################################################################
 # get common patterns in openings with Apriori Algorithm
 opening_moves <- mapply(function(moves, ply) moves[1:ply], strsplit(game_moves, " "), data$opening_ply)
-library(arules)
 opening_transactions <- as(opening_moves, "transactions")
-summary(opening_transactions)
+#summary(opening_transactions)
 rules <- apriori(opening_transactions, parameter = list(support = 0.1, confidence = 0.8))
 inspect(rules)
 
 plot(rules, method="grouped matrix", k = 5)
+

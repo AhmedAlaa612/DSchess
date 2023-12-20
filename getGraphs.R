@@ -247,7 +247,7 @@ calculate_time <- function() {
          y = "Average Time Taken(mins)") +
     theme_minimal() +
     theme(axis.text.x = element_text(angle = 45, hjust = 1))
-    
+  
 }
 getSupervised <- function() {
   par(mfrow = c(1, 2))  # Set up a 1x2 grid for plots
@@ -263,4 +263,8 @@ getSupervised <- function() {
        main = paste("Naive Bayes\nAccuracy: ", round(acc_nb, 2)))
   
   par(mfrow = c(1, 1))  # Reset the plotting layout to the default
+}
+getArules<- function(){
+  library(arulesViz)
+  plot(rules, method="grouped matrix", k = 5)
 }
